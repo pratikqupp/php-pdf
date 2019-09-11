@@ -28,6 +28,11 @@ class PdfDocument implements PdfDocumentInterface
     protected $margin;
 
     /**
+     * @var string
+     */
+    protected $encoding = 'UTF-8';
+
+    /**
      *
      */
     public function __construct(
@@ -36,7 +41,7 @@ class PdfDocument implements PdfDocumentInterface
         ?Marigin $marigin = null
     ) {
         $this->content = $content;
-        $this->margin = $marigin === null ? Margin::create(10, 10, 10, 10) : $marigin;
+        $this->margin = $marigin === null ? Margin::create(25, 25, 25, 25) : $marigin;
     }
 
     /**
@@ -45,6 +50,18 @@ class PdfDocument implements PdfDocumentInterface
     public function setOrientation(string $orientation)
     {
         $this->orientation = $orientation;
+
+        return $this;
+    }
+
+    /**
+     * @param string
+     *
+     * @return $this
+     */
+    public function setEncoding(string $encoding)
+    {
+        $this->encoding = $encoding;
 
         return $this;
     }
@@ -76,7 +93,7 @@ class PdfDocument implements PdfDocumentInterface
      */
     public function encoding(): string
     {
-        return 'UTF-8';
+        return $this->encoding;
     }
 
     /**

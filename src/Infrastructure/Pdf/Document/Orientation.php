@@ -8,6 +8,7 @@ namespace App\Infrastructure\Pdf\Document;
  */
 class Orientation
 {
+    const DEFAULT = self::PORTRAIT;
     const PORTRAIT = 'portrait';
     const LANDSCAPE = 'landscape';
 }

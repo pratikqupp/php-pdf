@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Pdf;
 
+use App\Infrastructure\Pdf\Document\PdfDocumentInterface;
+
+use RuntimeException;
+
 /**
  * LaTeX Engine
  */
@@ -13,18 +17,24 @@ class TexEngine
      *
      * @var string
      */
-    protected $_binary = '/usr/bin/latexpdf';
+    protected $binary = '/usr/bin/latexpdf';
+
+    /**
+     * @var array
+     */
+    protected $config = [];
 
     /**
      * Constructor
      *
-     * @param \CakePdf\Pdf\CakePdf $Pdf CakePdf instance
+     * @param array $config Config Options
      */
-    public function __construct(CakePdf $Pdf)
+    public function __construct(array $config = [])
     {
-        parent::__construct($Pdf);
-
-        $this->_defaultConfig['options']['output-directory'] = TMP . 'pdf';
+        $this->config = array_merge_recursive($this->config, $config);
+        if (!isset($this->config['options']['output-directory'])) {
+            $this->config['options']['output-directory'] = TMP . 'pdf';
+        }
     }
 
     /**
@@ -32,11 +42,11 @@ class TexEngine
      *
      * @return string Returns the file name of the written tex file.
      */
-    protected function _writeTexFile()
+    protected function writeTexFile()
     {
-        $output = $this->_Pdf->html();
+        $output = $this->Pdf->html();
         $file = sha1($output);
-        $texFile = $this->getConfig('options.output-directory') . DS . $file;
+        $texFile = $this->config['options.output-directory'] . DS . $file;
         file_put_contents($texFile, $output);
 
         return $texFile;
@@ -48,11 +58,11 @@ class TexEngine
      * @param  string $texFile Tex file name.
      * @return void
      */
-    protected function _cleanUpTexFiles($texFile)
+    protected function cleanUpTexFiles($texFile)
     {
         $extensions = ['aux', 'log', 'pdf'];
         foreach ($extensions as $extension) {
-            $texFile = $texFile . '.' . $extension;
+            $texFile .= '.' . $extension;
             if (file_exists($texFile)) {
                 unlink($texFile);
             }
@@ -67,23 +77,23 @@ class TexEngine
      */
     public function output()
     {
-        $texFile = $this->_writeTexFile();
-        $content = $this->_exec($this->_getCommand(), $texFile);
+        $texFile = $this->writeTexFile();
+        $content = $this->exec($this->getCommand(), $texFile);
 
         if (strpos(mb_strtolower($content['stderr']), 'error')) {
-            throw new Exception("System error <pre>" . $content['stderr'] . "</pre>");
+            throw new RuntimeException("System error <pre>" . $content['stderr'] . "</pre>");
         }
 
-        if (mb_strlen($content['stdout'], $this->_Pdf->encoding()) === 0) {
-            throw new Exception("TeX compiler binary didn't return any data");
+        if (mb_strlen($content['stdout'], $this->Pdf->encoding()) === 0) {
+            throw new RuntimeException("TeX compiler binary didn't return any data");
         }
 
         if ((int)$content['return'] !== 0 && !empty($content['stderr'])) {
-            throw new Exception("Shell error, return code: " . (int)$content['return']);
+            throw new RuntimeException("Shell error, return code: " . (int)$content['return']);
         }
 
         $result = file_get_contents($texFile . '.pdf');
-        $this->_cleanUpTexFiles($texFile);
+        $this->cleanUpTexFiles($texFile);
 
         return $result;
     }
@@ -95,7 +105,7 @@ class TexEngine
      * @param  string $input Html to pass to wkhtmltopdf
      * @return array the result of running the command to generate the pdf
      */
-    protected function _exec($cmd, $input)
+    protected function exec($cmd, $input)
     {
         $cmd .= ' ' . $input;
 
@@ -121,10 +131,11 @@ class TexEngine
      *
      * @return string The command with params and options.
      */
-    protected function _buildCommand()
+    protected function buildCommand()
     {
-        $command = $this->_binary;
-        $options = (array)$this->getConfig('options');
+        $command = $this->binary;
+        $options = (array)$this->config['options'];
+
         foreach ($options as $key => $value) {
             if (empty($value)) {
                 continue;
@@ -144,27 +155,33 @@ class TexEngine
      * @return string the command for generating the pdf
      * @throws \Cake\Core\Exception\Exception
      */
-    protected function _getCommand()
+    protected function getCommand()
     {
-        $binary = $this->getConfig('binary');
+        $binary = $this->config['binary'];
 
         if ($binary) {
-            $this->_binary = $binary;
+            $this->binary = $binary;
         }
-        if (!is_executable($this->_binary)) {
-            throw new Exception(
+        if (!is_executable($this->binary)) {
+            throw new RuntimeException(
                 sprintf(
-                    'TeX compiler binary is not found or not executable: %s', $this->_binary
+                    'TeX compiler binary is not found or not executable: %s',
+                    $this->binary
                 )
             );
         }
 
-        $options = (array)$this->getConfig('options');
+        $options = (array)$this->config['options'];
 
         if (!is_dir($options['output-directory'])) {
-            mkdir($options['output-directory']);
+            if (!mkdir($concurrentDirectory = $options['output-directory']) && !is_dir($concurrentDirectory)) {
+                throw new RuntimeException(sprintf(
+                    'Directory `%s` was not created',
+                    $concurrentDirectory
+                ));
+            }
         }
 
-        return $this->_buildCommand();
+        return $this->buildCommand();
     }
 }

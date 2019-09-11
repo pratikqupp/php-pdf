@@ -29,3 +29,4 @@ puphpet/*
 !/tmp/.gitkeep
 !/tmp/cache/.gitkeep
 yarn-error.log
+/example/example.pdf

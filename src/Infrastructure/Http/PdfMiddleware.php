@@ -70,29 +70,29 @@ class PdfMiddleware implements MiddlewareInterface
         $response = $this->responseFactory->createResponse();
         $body = (array)$request->getParsedBody();
 
-        $defaults = [
-            'engine' => 'WkHtmlToPdf',
-            'document' => [
-                'encoding' => 'UTF-8',
-                'orientation' => [
-                    'left' => 10,
-                    'right' => 10,
-                    'top' => 10,
-                    'bottom' => 10
-                ]
-            ],
-            'content' => '<h1>Test</h1>'
-        ];
+        if (!isset($body['engine'])) {
+            $body['engine'] = 'WkHtmlToPdf';
+        }
 
-        $body = array_merge($defaults, $body);
+        if (!isset($body['content'])) {
+            $body['content'] = '';
+        }
 
         try {
-            $pdf = new \App\Infrastructure\Pdf\Document\PdfDocument(
+            $document = new \App\Infrastructure\Pdf\Document\PdfDocument(
                 $body['content']
             );
 
+            if (isset($body['document']['orientation'])) {
+                $document->setOrientation($body['document']['orientation']);
+            }
+
+            if (isset($body['document']['encoding'])) {
+                $document->setEncoding($body['document']['encoding']);
+            }
+
             $engine = new \App\Infrastructure\Pdf\WkHtmlToPdfEngine();
-            $stream = $this->streamFactory->createStream($engine->generate($pdf));
+            $stream = $this->streamFactory->createStream($engine->generate($document));
         } catch (Throwable $e) {
             $stream = $this->streamFactory->createStream($e->getMessage());
 

@@ -1,3 +1,7 @@
+# RESTful API
+
+POST data:
+
 ```php
 $data = [
 	// Document Settings
@@ -11,3 +15,5 @@ $data = [
 	]
 ]
 ```
+
+If everything was OK you'll receive a status 200 with content type application/pdf.

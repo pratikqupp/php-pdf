@@ -29,14 +29,18 @@ use RuntimeException;
 class MiddlewareStack implements RequestHandlerInterface
 {
     /**
-     * 
-     *
-     * @var callable[] 
+     * @var callable[]
      */
     protected $queue = [];
 
+    /**
+     * @var \Psr\Container\ContainerInterface
+     */
     protected $container;
 
+    /**
+     * Constructor
+     */
     public function __construct(ContainerInterface $container, ?array $queue = [])
     {
         $this->container = $container;

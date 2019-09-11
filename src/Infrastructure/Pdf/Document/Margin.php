@@ -92,9 +92,9 @@ class Margin
     {
         return [
             'left' => $this->left,
-            'left' => $this->left,
-            'left' => $this->left,
-            'left' => $this->left
+            'right' => $this->right,
+            'top' => $this->top,
+            'bottom' => $this->bottom
         ];
     }
 }

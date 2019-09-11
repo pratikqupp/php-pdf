@@ -32,7 +32,7 @@ $container->add(\Psr\Http\Message\ServerRequestFactoryInterface::class, \App\Inf
 $container->add(\Psr\Http\Message\ResponseFactoryInterface::class, \Nyholm\Psr7\Factory\Psr17Factory::class);
 $container->add(\Psr\Http\Message\StreamFactoryInterface::class, Nyholm\Psr7\Factory\Psr17Factory::class);
 
-$container->add(\Psr\Http\Server\RequestHandlerInterface::class, function() use ($container) {
+$container->add(\Psr\Http\Server\RequestHandlerInterface::class, function () use ($container) {
 	return new \App\Infrastructure\Http\MiddlewareStack($container, [
 		\App\Infrastructure\Http\PdfMiddleware::class
 	]);

@@ -12,6 +12,11 @@ use App\Infrastructure\Pdf\Document\PdfDocumentInterface;
 class WkHtmlToPdfEngine implements PdfEngineInterface
 {
     /**
+     * @var \App\Infrastructure\Pdf\Document\PdfDocumentInterface
+     */
+    protected $document;
+
+    /**
      * Path to the wkhtmltopdf executable binary
      *
      * @var string
@@ -49,23 +54,23 @@ class WkHtmlToPdfEngine implements PdfEngineInterface
     /**
      * Generates Pdf from html
      *
-     * @throws \Cake\Core\Exception\Exception
      * @return string Raw PDF data
+     * @throws \Cake\Core\Exception\Exception
      * @throws \Exception If no output is generated to stdout by wkhtmltopdf.
      */
     public function generate(PdfDocumentInterface $pdf)
     {
-        $this->Pdf = $pdf;
+        $this->document = $pdf;
 
         $command = $this->getCommand();
-        $content = $this->exec($command, $this->Pdf->content());
+        $content = $this->exec($command, $this->document->content());
 
         if (!empty($content['stdout'])) {
             return $content['stdout'];
         }
 
         if (!empty($content['stderr'])) {
-            throw new Exception(
+            throw new RuntimeException(
                 sprintf(
                     'System error "%s" when executing command "%s". ' .
                     'Try using the binary provided on http://wkhtmltopdf.org/downloads.html',
@@ -81,8 +86,8 @@ class WkHtmlToPdfEngine implements PdfEngineInterface
     /**
      * Execute the WkHtmlToPdf commands for rendering pdfs
      *
-     * @param  string $cmd   the command to execute
-     * @param  string $input Html to pass to wkhtmltopdf
+     * @param string $cmd the command to execute
+     * @param string $input Html to pass to wkhtmltopdf
      * @return array the result of running the command to generate the pdf
      */
     protected function exec($cmd, $input)
@@ -120,21 +125,24 @@ class WkHtmlToPdfEngine implements PdfEngineInterface
     protected function getCommand()
     {
         if (!is_executable($this->binary)) {
-            throw new RuntimeException(sprintf('wkhtmltopdf binary is not found or not executable: %s', $this->binary));
+            throw new RuntimeException(sprintf(
+                'wkhtmltopdf binary is not found or not executable: %s',
+                $this->binary
+            ));
         }
 
         $options = [
             'quiet' => true,
             'print-media-type' => true,
-            'orientation' => $this->Pdf->orientation(),
-            'page-size' => $this->Pdf->pageSize(),
-            'encoding' => $this->Pdf->encoding(),
-            'title' => $this->Pdf->title(),
-             //'javascript-delay' => $this->Pdf->delay(),
-            //'window-status' => $this->Pdf->windowStatus(),
+            'orientation' => $this->document->orientation(),
+            'page-size' => $this->document->pageSize(),
+            'encoding' => $this->document->encoding(),
+            'title' => $this->document->title(),
+            //'javascript-delay' => $this->document->delay(),
+            //'window-status' => $this->document->windowStatus(),
         ];
 
-        $margin = $this->Pdf->margin();
+        $margin = $this->document->margin();
         foreach ($margin as $key => $value) {
             if ($value !== null) {
                 $options['margin-' . $key] = $value . 'mm';
@@ -163,14 +171,14 @@ class WkHtmlToPdfEngine implements PdfEngineInterface
         }
 
         /*
-        $footer = $this->Pdf->footer();
+        $footer = $this->document->footer();
         foreach ($footer as $location => $text) {
             if ($text !== null) {
                 $command .= " --footer-$location \"" . addslashes($text) . "\"";
             }
         }
 
-        $header = $this->Pdf->header();
+        $header = $this->document->header();
         foreach ($header as $location => $text) {
             if ($text !== null) {
                 $command .= " --header-$location \"" . addslashes($text) . "\"";
